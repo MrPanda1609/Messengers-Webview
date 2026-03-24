@@ -4,3 +4,10 @@ publish/
 release/
 *.user
 *.pdb
+*.zip
+
+# Source code (not public)
+*.cs
+*.csproj
+*.ico
+*.sln
