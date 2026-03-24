@@ -34,12 +34,12 @@ In 2025, Meta officially **discontinued the Messenger desktop app**, forcing use
 | Feature | Description |
 |---|---|
 | 🪶 **Ultra-light** | ~1.5 MB app size, uses system WebView2 (already on Windows 10/11) |
-| 💬 **Chat-focused** | Opens directly to Messenger, nav links (Home, Watch, Groups...) are dimmed & disabled |
+| 💬 **Chat-focused** | Opens directly to Messenger — designed for chatting only |
 | 🔔 **Notifications** | Native Windows notifications + sound when messages arrive |
 | 🔒 **Persistent login** | Login once, stay logged in forever |
 | 📌 **System tray** | Minimize to tray (X button = hide, not quit) |
 | 💾 **Remembers window** | Saves position and size between sessions |
-| 🚫 **No distractions** | Blocks navigation to Feed, Reels, Groups, Marketplace, Gaming |
+| 🚫 **No distractions** | Navigation to Feed, Reels, Groups, Marketplace, Gaming is blocked |
 | 🧠 **Low memory** | Optimized Chromium flags to reduce RAM usage |
 | 🔁 **Single instance** | Opening twice brings the existing window to front |
 
@@ -91,7 +91,10 @@ irm https://raw.githubusercontent.com/MrPanda1609/Messengers-Webview/main/uninst
 | **Minimize (−)** | Minimizes to system tray |
 | **Quit** | Right-click tray icon → Exit |
 | **New message** | Windows notification + sound alert |
-| **Header buttons** | Nav links (Home, Watch, Groups...) are dimmed. Avatar & other buttons still work |
+| **Header buttons** | Avatar works normally (account switch / logout) |
+
+
+> ⚠️ **Note:** Do not click on other pages (Home, Watch, Groups, Marketplace, Gaming...). This app is designed for Messenger only. If you accidentally navigate away, click the **Messenger icon** in the header bar to return, or restart the app.
 
 ---
 
@@ -118,13 +121,15 @@ Năm 2025, Meta chính thức **khai tử ứng dụng Messenger Desktop**, bu�
 ### Tính năng
 
 - 🪶 **Siêu nhẹ** — Chỉ ~1.5 MB, dùng WebView2 có sẵn trên Windows 10/11
-- 💬 **Tập trung nhắn tin** — Mở thẳng Messenger, các link điều hướng (Home, Watch, Groups...) bị mờ & vô hiệu hóa. Avatar và các nút khác vẫn hoạt động bình thường
+- 💬 **Tập trung nhắn tin** — Mở thẳng Messenger, chỉ dành cho nhắn tin
 - 🔔 **Thông báo** — Thông báo Windows native + âm thanh khi có tin nhắn
 - 🔒 **Nhớ đăng nhập** — Đăng nhập 1 lần, dùng mãi
 - 📌 **Khay hệ thống** — Thu nhỏ xuống tray (nút X = ẩn, không thoát)
 - 💾 **Nhớ cửa sổ** — Lưu vị trí và kích thước giữa các lần mở
 - 🧠 **Tiết kiệm RAM** — Tối ưu Chromium flags giảm bộ nhớ
-- 🚫 **Chặn điều hướng** — Không thể lướt sang Feed, Reels, Groups, Marketplace, Gaming
+- 🚫 **Chặn điều hướng** — Chặn chuyển trang sang Feed, Reels, Groups, Marketplace, Gaming
+
+> ⚠️ **Lưu ý:** Không nên ấn vào các trang khác (Trang chủ, Watch, Groups, Marketplace, Gaming...). App này chỉ dành cho Messenger. Nếu lỡ chuyển trang, hãy ấn vào **biểu tượng Messenger** trên thanh header để quay lại, hoặc khởi động lại app.
 
 ### Cài đặt nhanh
 
