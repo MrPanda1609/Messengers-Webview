@@ -11,7 +11,7 @@ A lightweight desktop wrapper for Facebook Messenger — because Meta killed the
 
 <img src="panda.png" width="128" alt="Messenger Lite">
 
-**[⬇ Download](https://github.com/MrPanda1609/Messengers-Webview/releases/latest)** · **[⚡ One-Command Install](#-quick-install)** · **[🌐 Tiếng Việt](#-tiếng-việt)**
+**[Download](https://github.com/MrPanda1609/Messengers-Webview/releases/latest)** · **[One-Command Install](#-quick-install)** · **[Tiếng Việt](#-tiếng-việt)**
 
 </div>
 
@@ -25,7 +25,11 @@ In 2025, Meta officially **discontinued the Messenger desktop app**, forcing use
 - 🚫 Mixed with other Facebook tabs, distractions everywhere
 - 🚫 Heavy browser memory usage just for chatting
 
-**Messenger Lite Desktop** solves this by wrapping Messenger in a **ultra-lightweight native window** (~1.5 MB) using Windows WebView2 — no Electron bloat, no extra browser needed.
+**Messenger Lite Desktop** solves this by wrapping Messenger in a **ultra-lightweight native window** (~1.5 MB) using Windows WebView2 — no Electron bloat, no extra browser needed. 
+
+---
+
+EXTREMELY LOW RAM USAGES THAN BROWSER !
 
 ---
 
@@ -39,7 +43,6 @@ In 2025, Meta officially **discontinued the Messenger desktop app**, forcing use
 | 🔒 **Persistent login** | Login once, stay logged in forever |
 | 📌 **System tray** | Minimize to tray (X button = hide, not quit) |
 | 💾 **Remembers window** | Saves position and size between sessions |
-| 🚫 **No distractions** | Navigation to Feed, Reels, Groups, Marketplace, Gaming is blocked |
 | 🧠 **Low memory** | Optimized Chromium flags to reduce RAM usage |
 | 🔁 **Single instance** | Opening twice brings the existing window to front |
 
@@ -118,6 +121,12 @@ Năm 2025, Meta chính thức **khai tử ứng dụng Messenger Desktop**, bu�
 
 **Messenger Lite Desktop** giải quyết vấn đề này bằng cách bọc Messenger trong một **cửa sổ native siêu nhẹ** (~1.5 MB), sử dụng WebView2 có sẵn trên Windows — không phình to như Electron, không cần trình duyệt thêm.
 
+---
+
+DÙNG CỰC KÌ ÍT RAM SO VỚI MỞ TRÊN TRÌNH DUYỆT!
+
+---
+
 ### Tính năng
 
 - 🪶 **Siêu nhẹ** — Chỉ ~1.5 MB, dùng WebView2 có sẵn trên Windows 10/11
@@ -127,7 +136,6 @@ Năm 2025, Meta chính thức **khai tử ứng dụng Messenger Desktop**, bu�
 - 📌 **Khay hệ thống** — Thu nhỏ xuống tray (nút X = ẩn, không thoát)
 - 💾 **Nhớ cửa sổ** — Lưu vị trí và kích thước giữa các lần mở
 - 🧠 **Tiết kiệm RAM** — Tối ưu Chromium flags giảm bộ nhớ
-- 🚫 **Chặn điều hướng** — Chặn chuyển trang sang Feed, Reels, Groups, Marketplace, Gaming
 
 > ⚠️ **Lưu ý:** Không nên ấn vào các trang khác (Trang chủ, Watch, Groups, Marketplace, Gaming...). App này chỉ dành cho Messenger. Nếu lỡ chuyển trang, hãy ấn vào **biểu tượng Messenger** trên thanh header để quay lại, hoặc khởi động lại app.
 
