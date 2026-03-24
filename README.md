@@ -35,7 +35,7 @@ In 2025, Meta officially **discontinued the Messenger desktop app**, forcing use
 |---|---|
 | 🪶 **Ultra-light** | ~1.5 MB app size, uses system WebView2 (already on Windows 10/11) |
 | 💬 **Chat-focused** | Opens directly to Messenger — designed for chatting only |
-| 🔔 **Notifications** | Native Windows notifications + sound when messages arrive |
+| 🔔 **Notifications** | Sound alert when new messages arrive (notification sound plays in-app) |
 | 🔒 **Persistent login** | Login once, stay logged in forever |
 | 📌 **System tray** | Minimize to tray (X button = hide, not quit) |
 | 💾 **Remembers window** | Saves position and size between sessions |
@@ -90,7 +90,7 @@ irm https://raw.githubusercontent.com/MrPanda1609/Messengers-Webview/main/uninst
 | **Close (X)** | Minimizes to system tray |
 | **Minimize (−)** | Minimizes to system tray |
 | **Quit** | Right-click tray icon → Exit |
-| **New message** | Windows notification + sound alert |
+| **New message** | Sound alert plays in-app when messages arrive |
 | **Header buttons** | Avatar works normally (account switch / logout) |
 
 
@@ -122,7 +122,7 @@ Năm 2025, Meta chính thức **khai tử ứng dụng Messenger Desktop**, bu�
 
 - 🪶 **Siêu nhẹ** — Chỉ ~1.5 MB, dùng WebView2 có sẵn trên Windows 10/11
 - 💬 **Tập trung nhắn tin** — Mở thẳng Messenger, chỉ dành cho nhắn tin
-- 🔔 **Thông báo** — Thông báo Windows native + âm thanh khi có tin nhắn
+- 🔔 **Thông báo** — Âm thanh thông báo khi có tin nhắn mới (phát âm thanh trong app)
 - 🔒 **Nhớ đăng nhập** — Đăng nhập 1 lần, dùng mãi
 - 📌 **Khay hệ thống** — Thu nhỏ xuống tray (nút X = ẩn, không thoát)
 - 💾 **Nhớ cửa sổ** — Lưu vị trí và kích thước giữa các lần mở
