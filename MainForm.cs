@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.16";
+    private const string CurrentVersion = "1.0.17";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -153,24 +153,15 @@ public class MainForm : Form
         };
 
 
-        // Open external links in default browser
+        // Open all new-window/popup links in default browser
         _webView.CoreWebView2.NewWindowRequested += (_, args) =>
         {
-            var uri = new Uri(args.Uri);
-            if (uri.Host.Contains("facebook.com") || uri.Host.Contains("messenger.com"))
+            args.Handled = true;
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                args.NewWindow = _webView.CoreWebView2;
-                _webView.CoreWebView2.Navigate(args.Uri);
-            }
-            else
-            {
-                args.Handled = true;
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = args.Uri,
-                    UseShellExecute = true
-                });
-            }
+                FileName = args.Uri,
+                UseShellExecute = true
+            });
         };
 
         // Block navigation away from Messenger (only after messages loaded)
