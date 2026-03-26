@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.17";
+    private const string CurrentVersion = "1.0.18";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -96,13 +96,16 @@ public class MainForm : Form
         settings.IsPasswordAutosaveEnabled = false;
         settings.IsPinchZoomEnabled = false;
         settings.IsSwipeNavigationEnabled = false;
+        settings.AreDevToolsEnabled = false;
 
         // Tell WebView2 to minimize memory usage
         _webView.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
 
-        // Inject SPA navigation guard BEFORE page scripts run
+        // Inject SPA navigation guard + header hiding BEFORE page scripts run
         _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
             "(function() {" +
+
+            // --- Nav guard ---
             "  window.__messengerGuardActive = false;" +
             "  var allowed = ['/messages', '/login', '/logout', '/checkpoint'," +
             "    '/cookie', '/privacy', '/dialog', '/deauth', '/two_step_verification'," +
@@ -131,8 +134,10 @@ public class MainForm : Form
             "      location.replace('/messages');" +
             "    }" +
             "  }, 500);" +
-            "})();"
-        );
+
+
+            "})();");
+
 
         // Block prefetch/preload for non-messenger resources
         _webView.CoreWebView2.AddWebResourceRequestedFilter("*://www.facebook.com/watch*", CoreWebView2WebResourceContext.All);
@@ -164,6 +169,19 @@ public class MainForm : Form
             });
         };
 
+        // Handle logout message from JS
+        _webView.CoreWebView2.WebMessageReceived += async (_, args) =>
+        {
+            if (args.TryGetWebMessageAsString() == "logout")
+            {
+                _messagesLoaded = false;
+                var cm = _webView.CoreWebView2.CookieManager;
+                var cookies = await cm.GetCookiesAsync("https://www.facebook.com");
+                foreach (var c in cookies) cm.DeleteCookie(c);
+                _webView.CoreWebView2.Navigate(MessengerUrl);
+            }
+        };
+
         // Block navigation away from Messenger (only after messages loaded)
         _webView.CoreWebView2.NavigationStarting += (_, args) =>
         {
@@ -177,8 +195,7 @@ public class MainForm : Form
                 && !path.StartsWith("/rti") && !path.StartsWith("/cookie")
                 && !path.StartsWith("/privacy") && !path.StartsWith("/dialog")
                 && !path.StartsWith("/v1") && !path.StartsWith("/v2")
-                && !path.StartsWith("/deauth") && !path.StartsWith("/two_step_verification")
-                && path != "/")
+                && !path.StartsWith("/deauth") && !path.StartsWith("/two_step_verification"))
             {
                 args.Cancel = true;
             }
@@ -188,6 +205,47 @@ public class MainForm : Form
         _webView.CoreWebView2.NavigationCompleted += async (_, _) =>
         {
             var currentUri = new Uri(_webView.CoreWebView2.Source);
+
+            // Hide Facebook header + add logout button (not on login/checkpoint pages)
+            if (currentUri.Host.Contains("facebook.com") && !currentUri.AbsolutePath.StartsWith("/login") && !currentUri.AbsolutePath.StartsWith("/checkpoint"))
+            {
+                await _webView.CoreWebView2.ExecuteScriptAsync(
+                    "if(!document.getElementById('__msng_hh')){" +
+                    "  var s=document.createElement('style');" +
+                    "  s.id='__msng_hh';" +
+                    "  s.textContent='" +
+                    "    div[role=banner]{visibility:hidden!important;height:0!important;" +
+                    "      min-height:0!important;max-height:0!important;padding:0!important;" +
+                    "      margin:0!important;overflow:hidden!important;" +
+                    "      background:transparent!important;box-shadow:none!important;border:none!important}" +
+                    "    #__msng_logout{position:fixed!important;top:8px!important;right:14px!important;" +
+                    "      height:28px!important;padding:0 10px!important;border-radius:6px!important;" +
+                    "      background:#0866ff!important;color:#fff!important;" +
+                    "      font-size:13px!important;font-family:Segoe UI,Helvetica,Arial,sans-serif!important;" +
+                    "      display:flex!important;align-items:center!important;gap:5px!important;" +
+                    "      cursor:pointer!important;z-index:10000!important;user-select:none!important;" +
+                    "      transition:background .2s!important;border:none!important}" +
+                    "    #__msng_logout:hover{background:#0756d6!important}" +
+                    "    #__msng_logout svg{width:14px;height:14px;fill:currentColor}" +
+                    "  ';" +
+                    "  document.head.appendChild(s);" +
+                    "  var btn=document.createElement('div');" +
+                    "  btn.id='__msng_logout';" +
+                    "  btn.innerHTML='<svg viewBox=\"0 0 24 24\"><path d=\"M5 3h6a1 1 0 010 2H5v14h6a1 1 0 010 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm12.71 8.29l-3-3a1 1 0 00-1.42 1.42L14.59 11H9a1 1 0 000 2h5.59l-1.3 1.29a1 1 0 001.42 1.42l3-3a1 1 0 000-1.42z\"/></svg>Log out';" +
+                    "  btn.title='Log out';" +
+                    "  btn.onclick=function(){window.chrome.webview.postMessage('logout');};" +
+                    "  document.body.appendChild(btn);" +
+                    "  var el=document.querySelector('div[role=banner]');" +
+                    "  if(el&&el.nextElementSibling){" +
+                    "    var cs=getComputedStyle(el.nextElementSibling);" +
+                    "    var h=parseFloat(cs.height)||0;" +
+                    "    if(el.nextElementSibling.childElementCount===0&&h>=40&&h<=70)" +
+                    "      el.nextElementSibling.style.setProperty('height','0','important');" +
+                    "  }" +
+                    "}"
+                );
+            }
+
             if (currentUri.Host.Contains("facebook.com") && currentUri.AbsolutePath == "/"
                 && !_redirectedToMessages)
             {
@@ -204,9 +262,13 @@ public class MainForm : Form
             {
                 await _webView.CoreWebView2.ExecuteScriptAsync("window.__messengerGuardActive = true;");
             }
-            if (currentUri.AbsolutePath.StartsWith("/login"))
+            if (currentUri.AbsolutePath.StartsWith("/login") || currentUri.AbsolutePath.StartsWith("/checkpoint"))
             {
                 _messagesLoaded = false;
+                await _webView.CoreWebView2.ExecuteScriptAsync(
+                    "['__msng_hh','__msng_logout'].forEach(function(id){" +
+                    "  var e=document.getElementById(id);if(e)e.remove();});"
+                );
             }
         };
 
