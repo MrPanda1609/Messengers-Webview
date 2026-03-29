@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.21";
+    private const string CurrentVersion = "1.0.22";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -128,11 +128,15 @@ public class MainForm : Form
             "    if (window.__messengerGuardActive && !ok(arguments[2])) { goBack(); return; }" +
             "    return origReplace.apply(this, arguments);" +
             "  };" +
-            // Catch click on links to non-allowed pages (avatar, profile links, etc.)
+            // Catch click on internal FB links to non-allowed pages (avatar, profile, etc.)
+            // External links (http/https) pass through → NewWindowRequested opens in browser
             "  document.addEventListener('click', function(e) {" +
             "    if (!window.__messengerGuardActive) return;" +
             "    var a = e.target.closest('a[href]');" +
-            "    if (a && !ok(a.getAttribute('href'))) { e.preventDefault(); e.stopPropagation(); }" +
+            "    if (!a) return;" +
+            "    var h = a.getAttribute('href');" +
+            "    if (!h || h.startsWith('http') || h.startsWith('//') || a.target === '_blank') return;" +
+            "    if (!ok(h)) { e.preventDefault(); e.stopPropagation(); }" +
             "  }, true);" +
             "  setInterval(function() {" +
             "    if (!window.__messengerGuardActive) return;" +
