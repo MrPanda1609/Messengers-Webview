@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.18";
+    private const string CurrentVersion = "1.0.19";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -282,17 +282,6 @@ public class MainForm : Form
             if (title.Contains('('))
                 FlashWindow(Handle, true);
         };
-    }
-
-    // Minimize button (−) also goes to tray
-    protected override void OnResize(EventArgs e)
-    {
-        base.OnResize(e);
-        if (WindowState == FormWindowState.Minimized)
-        {
-            WindowState = FormWindowState.Normal;
-            MinimizeToTray();
-        }
     }
 
     private void MinimizeToTray()

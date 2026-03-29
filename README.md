@@ -9,7 +9,7 @@ A lightweight desktop wrapper for Facebook Messenger — because Meta killed the
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows)](https://github.com/MrPanda1609/Messengers-Webview/releases)
 
-<img src="panda.png" width="128" alt="Messenger Lite">
+<img src="messenger.png" width="128" alt="Messenger Lite">
 
 **[Download](https://github.com/MrPanda1609/Messengers-Webview/releases/latest)** · **[One-Command Install](#-quick-install)** · **[Tiếng Việt](#-tiếng-việt)**
 
@@ -41,7 +41,7 @@ EXTREMELY LOW RAM USAGES THAN BROWSER !
 | 💬 **Chat-focused** | Opens directly to Messenger — designed for chatting only |
 | 🔔 **Notifications** | Sound alert when new messages arrive (notification sound plays in-app) |
 | 🔒 **Persistent login** | Login once, stay logged in forever |
-| 📌 **System tray** | Minimize to tray (X button = hide, not quit) |
+| 📌 **System tray** | Close with X hides to tray (does not quit) |
 | 💾 **Remembers window** | Saves position and size between sessions |
 | 🧠 **Low memory** | Optimized Chromium flags to reduce RAM usage |
 | 🔁 **Single instance** | Opening twice brings the existing window to front |
@@ -91,7 +91,7 @@ irm https://raw.githubusercontent.com/MrPanda1609/Messengers-Webview/main/uninst
 | Action | Behavior |
 |---|---|
 | **Close (X)** | Minimizes to system tray |
-| **Minimize (−)** | Minimizes to system tray |
+| **Minimize (−)** | Minimizes to taskbar |
 | **Quit** | Right-click tray icon → Exit |
 | **New message** | Sound alert plays in-app when messages arrive |
 | **Header buttons** | Avatar works normally (account switch / logout) |
@@ -133,7 +133,7 @@ DÙNG CỰC KÌ ÍT RAM SO VỚI MỞ TRÊN TRÌNH DUYỆT!
 - 💬 **Tập trung nhắn tin** — Mở thẳng Messenger, chỉ dành cho nhắn tin
 - 🔔 **Thông báo** — Âm thanh thông báo khi có tin nhắn mới (phát âm thanh trong app)
 - 🔒 **Nhớ đăng nhập** — Đăng nhập 1 lần, dùng mãi
-- 📌 **Khay hệ thống** — Thu nhỏ xuống tray (nút X = ẩn, không thoát)
+- 📌 **Khay hệ thống** — Nút X ẩn xuống tray, không thoát app
 - 💾 **Nhớ cửa sổ** — Lưu vị trí và kích thước giữa các lần mở
 - 🧠 **Tiết kiệm RAM** — Tối ưu Chromium flags giảm bộ nhớ
 
