@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.20";
+    private const string CurrentVersion = "1.0.21";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -117,23 +117,30 @@ public class MainForm : Form
             "      return allowed.some(function(a) { return p.startsWith(a); });" +
             "    } catch(e) { return true; }" +
             "  }" +
+            "  function goBack() { location.replace('/messages'); }" +
             "  var origPush = history.pushState;" +
             "  var origReplace = history.replaceState;" +
             "  history.pushState = function() {" +
-            "    if (window.__messengerGuardActive && !ok(arguments[2])) return;" +
+            "    if (window.__messengerGuardActive && !ok(arguments[2])) { goBack(); return; }" +
             "    return origPush.apply(this, arguments);" +
             "  };" +
             "  history.replaceState = function() {" +
-            "    if (window.__messengerGuardActive && !ok(arguments[2])) return;" +
+            "    if (window.__messengerGuardActive && !ok(arguments[2])) { goBack(); return; }" +
             "    return origReplace.apply(this, arguments);" +
             "  };" +
+            // Catch click on links to non-allowed pages (avatar, profile links, etc.)
+            "  document.addEventListener('click', function(e) {" +
+            "    if (!window.__messengerGuardActive) return;" +
+            "    var a = e.target.closest('a[href]');" +
+            "    if (a && !ok(a.getAttribute('href'))) { e.preventDefault(); e.stopPropagation(); }" +
+            "  }, true);" +
             "  setInterval(function() {" +
             "    if (!window.__messengerGuardActive) return;" +
             "    var p = location.pathname.toLowerCase();" +
             "    if (!allowed.some(function(a) { return p.startsWith(a); }) && p !== '/') {" +
-            "      location.replace('/messages');" +
+            "      goBack();" +
             "    }" +
-            "  }, 500);" +
+            "  }, 300);" +
 
 
             "})();");
@@ -198,6 +205,7 @@ public class MainForm : Form
                 && !path.StartsWith("/deauth") && !path.StartsWith("/two_step_verification"))
             {
                 args.Cancel = true;
+                _webView.CoreWebView2.Navigate(MessengerUrl);
             }
         };
 
