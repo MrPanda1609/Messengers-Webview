@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.19";
+    private const string CurrentVersion = "1.0.20";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
