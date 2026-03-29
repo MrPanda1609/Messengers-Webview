@@ -399,11 +399,39 @@ public class MainForm : Form
 
             // Launch updater script and exit
             var appDir = AppContext.BaseDirectory;
+            var exePath = Path.Combine(appDir, "Messenger.exe");
             var script = $@"
                 Start-Sleep -Seconds 2
                 Expand-Archive -Path '{zipPath}' -DestinationPath '{appDir}' -Force
                 Remove-Item '{zipPath}' -Force
-                Start-Process '{Path.Combine(appDir, "Messenger.exe")}'
+
+                # Refresh Windows icon cache so new icon shows immediately
+                $icDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Explorer'
+                Get-ChildItem $icDir -Filter 'iconcache*' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+                $oldCache = Join-Path $env:LOCALAPPDATA 'IconCache.db'
+                if (Test-Path $oldCache) {{ Remove-Item $oldCache -Force -ErrorAction SilentlyContinue }}
+                ie4uinit.exe -show
+
+                # Recreate shortcuts with new icon
+                $shell = New-Object -ComObject WScript.Shell
+                $desktopLink = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Messenger.lnk'
+                if (Test-Path $desktopLink) {{
+                    $sc = $shell.CreateShortcut($desktopLink)
+                    $sc.TargetPath = '{exePath}'
+                    $sc.WorkingDirectory = '{appDir}'
+                    $sc.Description = 'Messenger Lite Desktop'
+                    $sc.Save()
+                }}
+                $startLink = Join-Path ([Environment]::GetFolderPath('Programs')) 'Messenger.lnk'
+                if (Test-Path $startLink) {{
+                    $sc = $shell.CreateShortcut($startLink)
+                    $sc.TargetPath = '{exePath}'
+                    $sc.WorkingDirectory = '{appDir}'
+                    $sc.Description = 'Messenger Lite Desktop'
+                    $sc.Save()
+                }}
+
+                Start-Process '{exePath}'
             ";
             var scriptPath = Path.Combine(Path.GetTempPath(), "messenger-update.ps1");
             await File.WriteAllTextAsync(scriptPath, script);
