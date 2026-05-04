@@ -10,7 +10,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.22";
+    private const string CurrentVersion = "1.0.23";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -107,7 +107,7 @@ public class MainForm : Form
 
             // --- Nav guard ---
             "  window.__messengerGuardActive = false;" +
-            "  var allowed = ['/messages', '/login', '/logout', '/checkpoint'," +
+            "  var allowed = ['/messages', '/photo', '/photos', '/stories', '/login', '/logout', '/checkpoint'," +
             "    '/cookie', '/privacy', '/dialog', '/deauth', '/two_step_verification'," +
             "    '/api', '/ajax', '/rti', '/v1', '/v2'];" +
             "  function ok(url) {" +
@@ -118,6 +118,9 @@ public class MainForm : Form
             "    } catch(e) { return true; }" +
             "  }" +
             "  function goBack() { location.replace('/messages'); }" +
+            "  function openExternal(url) {" +
+            "    try { window.chrome.webview.postMessage('open:' + new URL(url, location.href).href); } catch(e) {}" +
+            "  }" +
             "  var origPush = history.pushState;" +
             "  var origReplace = history.replaceState;" +
             "  history.pushState = function() {" +
@@ -128,15 +131,18 @@ public class MainForm : Form
             "    if (window.__messengerGuardActive && !ok(arguments[2])) { goBack(); return; }" +
             "    return origReplace.apply(this, arguments);" +
             "  };" +
-            // Catch click on internal FB links to non-allowed pages (avatar, profile, etc.)
-            // External links (http/https) pass through → NewWindowRequested opens in browser
+            // Open external links in the default browser even when Facebook does same-tab SPA navigation.
             "  document.addEventListener('click', function(e) {" +
             "    if (!window.__messengerGuardActive) return;" +
             "    var a = e.target.closest('a[href]');" +
             "    if (!a) return;" +
             "    var h = a.getAttribute('href');" +
-            "    if (!h || h.startsWith('http') || h.startsWith('//') || a.target === '_blank') return;" +
-            "    if (!ok(h)) { e.preventDefault(); e.stopPropagation(); }" +
+            "    if (!h || h.startsWith('#') || h.startsWith('javascript:')) return;" +
+            "    var u; try { u = new URL(h, location.href); } catch(ex) { return; }" +
+            "    if (u.protocol !== 'http:' && u.protocol !== 'https:') return;" +
+            "    if (u.origin !== location.origin || !ok(u.href)) {" +
+            "      e.preventDefault(); e.stopPropagation(); openExternal(u.href);" +
+            "    }" +
             "  }, true);" +
             "  setInterval(function() {" +
             "    if (!window.__messengerGuardActive) return;" +
@@ -173,17 +179,20 @@ public class MainForm : Form
         _webView.CoreWebView2.NewWindowRequested += (_, args) =>
         {
             args.Handled = true;
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = args.Uri,
-                UseShellExecute = true
-            });
+            OpenInDefaultBrowser(args.Uri);
         };
 
         // Handle logout message from JS
         _webView.CoreWebView2.WebMessageReceived += async (_, args) =>
         {
-            if (args.TryGetWebMessageAsString() == "logout")
+            var message = args.TryGetWebMessageAsString();
+            if (message.StartsWith("open:", StringComparison.OrdinalIgnoreCase))
+            {
+                OpenInDefaultBrowser(message[5..]);
+                return;
+            }
+
+            if (message == "logout")
             {
                 _messagesLoaded = false;
                 var cm = _webView.CoreWebView2.CookieManager;
@@ -197,10 +206,21 @@ public class MainForm : Form
         _webView.CoreWebView2.NavigationStarting += (_, args) =>
         {
             if (!_messagesLoaded) return;
-            var uri = new Uri(args.Uri);
+            if (!Uri.TryCreate(args.Uri, UriKind.Absolute, out var uri)) return;
+
+            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) return;
+
+            if (!uri.Host.Contains("facebook.com"))
+            {
+                args.Cancel = true;
+                OpenInDefaultBrowser(args.Uri);
+                return;
+            }
+
             var path = uri.AbsolutePath.ToLower();
-            if (uri.Host.Contains("facebook.com")
-                && !path.StartsWith("/messages") && !path.StartsWith("/login")
+            if (!path.StartsWith("/messages") && !path.StartsWith("/photo")
+                && !path.StartsWith("/photos") && !path.StartsWith("/stories")
+                && !path.StartsWith("/login")
                 && !path.StartsWith("/logout") && !path.StartsWith("/checkpoint")
                 && !path.StartsWith("/ajax") && !path.StartsWith("/api")
                 && !path.StartsWith("/rti") && !path.StartsWith("/cookie")
@@ -209,7 +229,7 @@ public class MainForm : Form
                 && !path.StartsWith("/deauth") && !path.StartsWith("/two_step_verification"))
             {
                 args.Cancel = true;
-                _webView.CoreWebView2.Navigate(MessengerUrl);
+                OpenInDefaultBrowser(args.Uri);
             }
         };
 
@@ -306,6 +326,25 @@ public class MainForm : Form
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool FlashWindow(IntPtr hWnd, bool invert);
+
+    private static void OpenInDefaultBrowser(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+        }
+        catch { }
+    }
 
     private void RestoreFromTray()
     {
