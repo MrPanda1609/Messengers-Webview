@@ -39,9 +39,9 @@ EXTREMELY LOW RAM USAGES THAN BROWSER !
 |---|---|
 | 🪶 **Ultra-light** | ~1.5 MB app size, uses system WebView2 (already on Windows 10/11) |
 | 💬 **Chat-focused** | Opens directly to Messenger — designed for chatting only |
-| 🔔 **Notifications** | Sound alert when new messages arrive (notification sound plays in-app) |
+| 🔔 **Notifications** | Windows popup notification + in-app sound when new messages arrive |
 | 🔒 **Persistent login** | Login once, stay logged in forever |
-| 📌 **System tray** | Close with X hides to tray (does not quit) |
+| 📌 **System tray** | Close with X hides to tray (does not quit); opening the app again restores it |
 | 💾 **Remembers window** | Saves position and size between sessions |
 | 🧠 **Low memory** | Optimized Chromium flags to reduce RAM usage |
 | 🔁 **Single instance** | Opening twice brings the existing window to front |
@@ -93,7 +93,8 @@ irm https://raw.githubusercontent.com/MrPanda1609/Messengers-Webview/main/uninst
 | **Close (X)** | Minimizes to system tray |
 | **Minimize (−)** | Minimizes to taskbar |
 | **Quit** | Right-click tray icon → Exit |
-| **New message** | Sound alert plays in-app when messages arrive |
+| **New message** | Windows popup notification + in-app sound when messages arrive |
+| **Open while hidden** | Restores the existing tray instance instead of opening a second app |
 | **Header buttons** | Avatar works normally (account switch / logout) |
 
 
@@ -131,9 +132,9 @@ DÙNG CỰC KÌ ÍT RAM SO VỚI MỞ TRÊN TRÌNH DUYỆT!
 
 - 🪶 **Siêu nhẹ** — Chỉ ~1.5 MB, dùng WebView2 có sẵn trên Windows 10/11
 - 💬 **Tập trung nhắn tin** — Mở thẳng Messenger, chỉ dành cho nhắn tin
-- 🔔 **Thông báo** — Âm thanh thông báo khi có tin nhắn mới (phát âm thanh trong app)
+- 🔔 **Thông báo** — Popup thông báo Windows + âm thanh trong app khi có tin nhắn mới
 - 🔒 **Nhớ đăng nhập** — Đăng nhập 1 lần, dùng mãi
-- 📌 **Khay hệ thống** — Nút X ẩn xuống tray, không thoát app
+- 📌 **Khay hệ thống** — Nút X ẩn xuống tray, không thoát app; mở app lần nữa sẽ tự bật lại cửa sổ đang ẩn
 - 💾 **Nhớ cửa sổ** — Lưu vị trí và kích thước giữa các lần mở
 - 🧠 **Tiết kiệm RAM** — Tối ưu Chromium flags giảm bộ nhớ
 

@@ -4,13 +4,14 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Messenger;
 
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.23";
+    private const string CurrentVersion = "1.0.24";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -18,6 +19,9 @@ public class MainForm : Form
     private Rectangle _restoreBounds;
     private bool _redirectedToMessages;
     private bool _messagesLoaded;
+    private bool _hiddenToTray;
+    private int _lastUnreadCount;
+    private DateTime _lastNotificationAt = DateTime.MinValue;
 
     public MainForm()
     {
@@ -50,7 +54,18 @@ public class MainForm : Form
             Icon = Icon,
             Visible = false
         };
+        _trayIcon.Click += (_, args) =>
+        {
+            if (args is MouseEventArgs { Button: MouseButtons.Left })
+                RestoreFromTray();
+        };
         _trayIcon.DoubleClick += (_, _) => RestoreFromTray();
+        _trayIcon.BalloonTipClicked += (_, _) => RestoreFromTray();
+        _trayIcon.BalloonTipClosed += (_, _) =>
+        {
+            if (!_hiddenToTray)
+                _trayIcon.Visible = false;
+        };
 
         var trayMenu = new ContextMenuStrip();
         trayMenu.Items.Add("Open", null, (_, _) => RestoreFromTray());
@@ -97,9 +112,27 @@ public class MainForm : Form
         settings.IsPinchZoomEnabled = false;
         settings.IsSwipeNavigationEnabled = false;
         settings.AreDevToolsEnabled = false;
+        settings.IsWebMessageEnabled = true;
 
         // Tell WebView2 to minimize memory usage
         _webView.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+
+        _webView.CoreWebView2.PermissionRequested += (_, args) =>
+        {
+            if (args.PermissionKind == CoreWebView2PermissionKind.Notifications)
+                args.State = CoreWebView2PermissionState.Allow;
+        };
+
+        _webView.CoreWebView2.NotificationReceived += (_, args) =>
+        {
+            args.Handled = true;
+            var notification = args.Notification;
+            var title = string.IsNullOrWhiteSpace(notification.Title) ? "Messenger" : notification.Title;
+            var body = string.IsNullOrWhiteSpace(notification.Body) ? "Bạn có tin nhắn mới." : notification.Body;
+            ShowMessageNotification(title, body);
+
+            try { notification.ReportShown(); } catch { }
+        };
 
         // Inject SPA navigation guard + header hiding BEFORE page scripts run
         _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
@@ -306,19 +339,29 @@ public class MainForm : Form
 
         _webView.CoreWebView2.Navigate(MessengerUrl);
 
-        // Flash taskbar + update title when unread count changes
+        // Flash taskbar + notify when unread count changes
         _webView.CoreWebView2.DocumentTitleChanged += (_, _) =>
         {
             var title = _webView.CoreWebView2.DocumentTitle;
             Text = string.IsNullOrEmpty(title) ? "Messenger" : title;
-            if (title.Contains('('))
+            var unreadCount = GetUnreadCount(title);
+
+            if (unreadCount > 0)
                 FlashWindow(Handle, true);
+
+            if (unreadCount > _lastUnreadCount)
+                ShowMessageNotification("Messenger", unreadCount == 1
+                    ? "Bạn có tin nhắn mới."
+                    : $"Bạn có {unreadCount} tin nhắn chưa đọc.");
+
+            _lastUnreadCount = unreadCount;
         };
     }
 
     private void MinimizeToTray()
     {
         _restoreBounds = Bounds;
+        _hiddenToTray = true;
         ShowInTaskbar = false;
         Location = new Point(-32000, -32000);
         _trayIcon.Visible = true;
@@ -348,10 +391,26 @@ public class MainForm : Form
 
     private void RestoreFromTray()
     {
-        Bounds = _restoreBounds;
+        if (_hiddenToTray)
+            Bounds = _restoreBounds;
+        _hiddenToTray = false;
         ShowInTaskbar = true;
         _trayIcon.Visible = false;
+        WindowState = FormWindowState.Normal;
+        NativeMethods.ShowWindow(Handle, NativeMethods.SW_RESTORE);
         Activate();
+        NativeMethods.SetForegroundWindow(Handle);
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == Program.RestoreMessage || m.Msg == NativeMethods.WM_TOAST_CLICKED)
+        {
+            RestoreFromTray();
+            return;
+        }
+
+        base.WndProc(ref m);
     }
 
     // X button = minimize to tray; actual exit via tray menu only
@@ -373,6 +432,30 @@ public class MainForm : Form
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "MessengerWrapper", "window.txt");
 
+    private void ShowMessageNotification(string title, string message)
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            if (now - _lastNotificationAt < TimeSpan.FromSeconds(2))
+                return;
+
+            _lastNotificationAt = now;
+            _trayIcon.Visible = true;
+            _trayIcon.BalloonTipTitle = title;
+            _trayIcon.BalloonTipText = message;
+            _trayIcon.BalloonTipIcon = ToolTipIcon.Info;
+            _trayIcon.ShowBalloonTip(5000);
+        }
+        catch { }
+    }
+
+    private static int GetUnreadCount(string title)
+    {
+        var match = Regex.Match(title, @"\((\d+)\)");
+        return match.Success && int.TryParse(match.Groups[1].Value, out var count) ? count : 0;
+    }
+
     private void SaveWindowState()
     {
         try
@@ -380,7 +463,7 @@ public class MainForm : Form
             var dir = Path.GetDirectoryName(SettingsPath)!;
             Directory.CreateDirectory(dir);
 
-            var bounds = _trayIcon.Visible ? _restoreBounds : Bounds;
+            var bounds = _hiddenToTray ? _restoreBounds : Bounds;
             File.WriteAllText(SettingsPath, $"{bounds.X},{bounds.Y},{bounds.Width},{bounds.Height}");
         }
         catch { }
