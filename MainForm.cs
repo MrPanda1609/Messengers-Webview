@@ -11,7 +11,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.24";
+    private const string CurrentVersion = "1.0.25";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -413,6 +413,12 @@ public class MainForm : Form
         base.WndProc(ref m);
     }
 
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        SaveWindowHandle();
+    }
+
     // X button = minimize to tray; actual exit via tray menu only
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
@@ -423,6 +429,7 @@ public class MainForm : Form
             return;
         }
         SaveWindowState();
+        DeleteWindowHandle();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
         base.OnFormClosing(e);
@@ -431,6 +438,26 @@ public class MainForm : Form
     private string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "MessengerWrapper", "window.txt");
+
+    private void SaveWindowHandle()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Program.WindowHandlePath)!);
+            File.WriteAllText(Program.WindowHandlePath, Handle.ToInt64().ToString());
+        }
+        catch { }
+    }
+
+    private static void DeleteWindowHandle()
+    {
+        try
+        {
+            if (File.Exists(Program.WindowHandlePath))
+                File.Delete(Program.WindowHandlePath);
+        }
+        catch { }
+    }
 
     private void ShowMessageNotification(string title, string message)
     {
