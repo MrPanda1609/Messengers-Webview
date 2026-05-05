@@ -11,7 +11,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.25";
+    private const string CurrentVersion = "1.0.26";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -21,7 +21,10 @@ public class MainForm : Form
     private bool _messagesLoaded;
     private bool _hiddenToTray;
     private int _lastUnreadCount;
+    private int _lastNotifiedUnreadCount;
     private DateTime _lastNotificationAt = DateTime.MinValue;
+    private DateTime _unreadClearedAt = DateTime.MinValue;
+    private bool _handlingUnreadNotification;
 
     public MainForm()
     {
@@ -127,11 +130,8 @@ public class MainForm : Form
         {
             args.Handled = true;
             var notification = args.Notification;
-            var title = string.IsNullOrWhiteSpace(notification.Title) ? "Messenger" : notification.Title;
-            var body = string.IsNullOrWhiteSpace(notification.Body) ? "Bạn có tin nhắn mới." : notification.Body;
-            ShowMessageNotification(title, body);
-
             try { notification.ReportShown(); } catch { }
+            try { notification.ReportClosed(); } catch { }
         };
 
         // Inject SPA navigation guard + header hiding BEFORE page scripts run
@@ -340,7 +340,7 @@ public class MainForm : Form
         _webView.CoreWebView2.Navigate(MessengerUrl);
 
         // Flash taskbar + notify when unread count changes
-        _webView.CoreWebView2.DocumentTitleChanged += (_, _) =>
+        _webView.CoreWebView2.DocumentTitleChanged += async (_, _) =>
         {
             var title = _webView.CoreWebView2.DocumentTitle;
             Text = string.IsNullOrEmpty(title) ? "Messenger" : title;
@@ -349,12 +349,40 @@ public class MainForm : Form
             if (unreadCount > 0)
                 FlashWindow(Handle, true);
 
-            if (unreadCount > _lastUnreadCount)
-                ShowMessageNotification("Messenger", unreadCount == 1
-                    ? "Bạn có tin nhắn mới."
-                    : $"Bạn có {unreadCount} tin nhắn chưa đọc.");
-
+            var previousUnreadCount = _lastUnreadCount;
             _lastUnreadCount = unreadCount;
+
+            if (unreadCount == 0 && previousUnreadCount > 0)
+                _unreadClearedAt = DateTime.UtcNow;
+
+            if (unreadCount == 0 && _unreadClearedAt != DateTime.MinValue
+                && DateTime.UtcNow - _unreadClearedAt > TimeSpan.FromSeconds(20))
+            {
+                _lastNotifiedUnreadCount = 0;
+                _unreadClearedAt = DateTime.MinValue;
+            }
+
+            if (unreadCount > previousUnreadCount
+                && unreadCount > _lastNotifiedUnreadCount
+                && !_handlingUnreadNotification)
+            {
+                _handlingUnreadNotification = true;
+                _lastNotifiedUnreadCount = unreadCount;
+                try
+                {
+                    var preview = await TryGetLatestMessagePreview();
+                    if (preview != null)
+                        ShowMessageNotification(preview.Value.Title, preview.Value.Body);
+                    else
+                        ShowMessageNotification("Messenger", unreadCount == 1
+                            ? "Bạn có tin nhắn mới."
+                            : $"Bạn có {unreadCount} tin nhắn chưa đọc.");
+                }
+                finally
+                {
+                    _handlingUnreadNotification = false;
+                }
+            }
         };
     }
 
@@ -481,6 +509,53 @@ public class MainForm : Form
     {
         var match = Regex.Match(title, @"\((\d+)\)");
         return match.Success && int.TryParse(match.Groups[1].Value, out var count) ? count : 0;
+    }
+
+    private async Task<(string Title, string Body)?> TryGetLatestMessagePreview()
+    {
+        try
+        {
+            var json = await _webView.CoreWebView2.ExecuteScriptAsync(
+                "(function(){" +
+                "  function clean(s){return (s||'').replace(/\\s+/g,' ').trim();}" +
+                "  function visible(e){var r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.right>0;}" +
+                "  var items=Array.from(document.querySelectorAll('[role=gridcell],[role=row],a[role=link]')).filter(visible);" +
+                "  var best=null;" +
+                "  for(var i=0;i<items.length;i++){" +
+                "    var item=items[i];" +
+                "    var text=clean(item.innerText||item.textContent);" +
+                "    if(!text||text.length<3||text.length>500) continue;" +
+                "    if(/^(chats|search|messenger|requests|archive|communities|marketplace)$/i.test(text)) continue;" +
+                "    var aria=clean(item.getAttribute('aria-label'));" +
+                "    if((aria&&/(unread|chưa đọc|tin nhắn mới|new message)/i.test(aria))||/(^|\\s)(now|just now|vừa xong|[0-9]+[mhd]|[0-9]+ phút|[0-9]+ giờ)(\\s|$)/i.test(text)){best={aria:aria,text:text};break;}" +
+                "    if(!best) best={aria:aria,text:text};" +
+                "  }" +
+                "  if(!best) return null;" +
+                "  var parts=best.text.split('\\n').map(clean).filter(Boolean);" +
+                "  if(parts.length===1) parts=best.text.split(/ · | \\u00b7 /).map(clean).filter(Boolean);" +
+                "  var name=parts[0]||best.aria||'Messenger';" +
+                "  var body=parts.slice(1).join(' · ')||best.aria||'Bạn có tin nhắn mới.';" +
+                "  body=body.replace(/^(active|hoạt động).*$/i,'').trim()||'Bạn có tin nhắn mới.';" +
+                "  return {title:name.substring(0,64),body:body.substring(0,180)};" +
+                "})()");
+
+            if (string.IsNullOrWhiteSpace(json) || json == "null")
+                return null;
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var previewTitle = root.TryGetProperty("title", out var titleProp) ? titleProp.GetString() : null;
+            var previewBody = root.TryGetProperty("body", out var bodyProp) ? bodyProp.GetString() : null;
+
+            if (string.IsNullOrWhiteSpace(previewTitle) || string.IsNullOrWhiteSpace(previewBody))
+                return null;
+
+            return (previewTitle, previewBody);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void SaveWindowState()
