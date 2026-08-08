@@ -15,3 +15,17 @@ if ($found.Count -gt 0) {
 }
 
 Write-Host "PASS: WebView lifecycle configuration does not starve the renderer."
+
+$requiredRecoveryHooks = @(
+    "ProcessFailed += OnWebViewProcessFailed"
+    "BrowserProcessExited += OnBrowserProcessExited"
+    "RecreateWebViewAsync"
+    "CoreWebView2BrowserProcessExitKind.Failed"
+)
+
+$missing = $requiredRecoveryHooks | Where-Object { -not $source.Contains($_) }
+if ($missing.Count -gt 0) {
+    throw "WebView does not recover from a browser-process crash: $($missing -join ', ')"
+}
+
+Write-Host "PASS: WebView recreates itself after a browser-process crash."

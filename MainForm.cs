@@ -11,10 +11,11 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.27";
+    private const string CurrentVersion = "1.0.28";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
-    private readonly WebView2 _webView;
+    private WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
+    private bool _recoveringWebView;
     private bool _forceClose;
     private Rectangle _restoreBounds;
     private bool _redirectedToMessages;
@@ -43,11 +44,7 @@ public class MainForm : Form
         LoadWindowState();
 
         // WebView2
-        _webView = new WebView2
-        {
-            Dock = DockStyle.Fill
-        };
-        _webView.CoreWebView2InitializationCompleted += OnWebViewReady;
+        _webView = CreateWebView();
         Controls.Add(_webView);
 
         // System tray
@@ -77,13 +74,23 @@ public class MainForm : Form
         _trayIcon.ContextMenuStrip = trayMenu;
 
         // Initialize WebView2
-        InitializeWebView();
+        _ = InitializeWebViewAsync(_webView);
 
         // Check for updates on startup
         CheckForUpdate();
     }
 
-    private async void InitializeWebView()
+    private WebView2 CreateWebView()
+    {
+        var webView = new WebView2
+        {
+            Dock = DockStyle.Fill
+        };
+        webView.CoreWebView2InitializationCompleted += OnWebViewReady;
+        return webView;
+    }
+
+    private async Task InitializeWebViewAsync(WebView2 webView)
     {
         var userDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -97,7 +104,9 @@ public class MainForm : Form
                 + "--disable-sync --disable-translate --metrics-recording-only --no-first-run"
             ));
 
-        await _webView.EnsureCoreWebView2Async(env);
+        env.BrowserProcessExited += OnBrowserProcessExited;
+
+        await webView.EnsureCoreWebView2Async(env);
     }
 
     private void OnWebViewReady(object? sender, CoreWebView2InitializationCompletedEventArgs e)
@@ -115,6 +124,8 @@ public class MainForm : Form
         settings.IsSwipeNavigationEnabled = false;
         settings.AreDevToolsEnabled = false;
         settings.IsWebMessageEnabled = true;
+
+        _webView.CoreWebView2.ProcessFailed += OnWebViewProcessFailed;
 
         _webView.CoreWebView2.PermissionRequested += (_, args) =>
         {
@@ -380,6 +391,87 @@ public class MainForm : Form
                 }
             }
         };
+    }
+
+    private void OnWebViewProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
+    {
+        LogWebViewFailure(e);
+    }
+
+    private void OnBrowserProcessExited(object? sender, CoreWebView2BrowserProcessExitedEventArgs e)
+    {
+        if (e.BrowserProcessExitKind != CoreWebView2BrowserProcessExitKind.Failed)
+            return;
+
+        if (IsDisposed || !IsHandleCreated)
+            return;
+
+        BeginInvoke(new Action(async () =>
+        {
+            try
+            {
+                await RecreateWebViewAsync();
+            }
+            catch (Exception ex)
+            {
+                LogWebViewRecoveryFailure(ex);
+            }
+        }));
+    }
+
+    private async Task RecreateWebViewAsync()
+    {
+        if (_recoveringWebView || IsDisposed)
+            return;
+
+        _recoveringWebView = true;
+        try
+        {
+            var failedWebView = _webView;
+            var replacement = CreateWebView();
+            _webView = replacement;
+
+            Controls.Add(replacement);
+            replacement.BringToFront();
+            Controls.Remove(failedWebView);
+            failedWebView.Dispose();
+
+            await InitializeWebViewAsync(replacement);
+        }
+        finally
+        {
+            _recoveringWebView = false;
+        }
+    }
+
+    private static void LogWebViewFailure(CoreWebView2ProcessFailedEventArgs e)
+    {
+        try
+        {
+            var dataDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MessengerWrapper");
+            Directory.CreateDirectory(dataDirectory);
+            File.AppendAllText(
+                Path.Combine(dataDirectory, "webview-failures.log"),
+                $"{DateTimeOffset.Now:O} kind={e.ProcessFailedKind} reason={e.Reason} exit={e.ExitCode}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
+    private static void LogWebViewRecoveryFailure(Exception exception)
+    {
+        try
+        {
+            var dataDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MessengerWrapper");
+            Directory.CreateDirectory(dataDirectory);
+            File.AppendAllText(
+                Path.Combine(dataDirectory, "webview-failures.log"),
+                $"{DateTimeOffset.Now:O} recovery-failed={exception}{Environment.NewLine}");
+        }
+        catch { }
     }
 
     private void MinimizeToTray()
