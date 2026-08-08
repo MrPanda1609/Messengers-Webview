@@ -29,3 +29,13 @@ if ($missing.Count -gt 0) {
 }
 
 Write-Host "PASS: WebView recreates itself after a browser-process crash."
+
+if ($source.Contains("CoreWebView2.NotificationReceived")) {
+    throw "WebView still intercepts native notifications, which can crash the browser process."
+}
+
+if (-not $source.Contains("CoreWebView2PermissionState.Deny")) {
+    throw "WebView does not deny redundant native notifications."
+}
+
+Write-Host "PASS: Native notifications cannot trigger the WebView2 browser crash."

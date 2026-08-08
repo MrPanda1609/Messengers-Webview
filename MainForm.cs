@@ -11,7 +11,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.28";
+    private const string CurrentVersion = "1.0.29";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -130,15 +130,7 @@ public class MainForm : Form
         _webView.CoreWebView2.PermissionRequested += (_, args) =>
         {
             if (args.PermissionKind == CoreWebView2PermissionKind.Notifications)
-                args.State = CoreWebView2PermissionState.Allow;
-        };
-
-        _webView.CoreWebView2.NotificationReceived += (_, args) =>
-        {
-            args.Handled = true;
-            var notification = args.Notification;
-            try { notification.ReportShown(); } catch { }
-            try { notification.ReportClosed(); } catch { }
+                args.State = CoreWebView2PermissionState.Deny;
         };
 
         // Inject SPA navigation guard + header hiding BEFORE page scripts run
@@ -206,14 +198,6 @@ public class MainForm : Form
         {
             args.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(null, 403, "Blocked", "");
         };
-
-        // Allow notifications
-        _webView.CoreWebView2.PermissionRequested += (_, args) =>
-        {
-            if (args.PermissionKind == CoreWebView2PermissionKind.Notifications)
-                args.State = CoreWebView2PermissionState.Allow;
-        };
-
 
         // Open all new-window/popup links in default browser
         _webView.CoreWebView2.NewWindowRequested += (_, args) =>
