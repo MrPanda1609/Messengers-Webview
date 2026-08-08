@@ -11,7 +11,7 @@ namespace Messenger;
 public class MainForm : Form
 {
     private const string MessengerUrl = "https://www.facebook.com/messages";
-    private const string CurrentVersion = "1.0.26";
+    private const string CurrentVersion = "1.0.27";
     private const string GitHubRepo = "MrPanda1609/Messengers-Webview";
     private readonly WebView2 _webView;
     private readonly NotifyIcon _trayIcon;
@@ -94,8 +94,7 @@ public class MainForm : Form
             userDataFolder: userDataFolder,
             options: new CoreWebView2EnvironmentOptions(
                 "--disable-background-networking --disable-default-apps --disable-extensions "
-                + "--disable-sync --disable-translate --metrics-recording-only --no-first-run "
-                + "--renderer-process-limit=1 --js-flags=--max-old-space-size=512"
+                + "--disable-sync --disable-translate --metrics-recording-only --no-first-run"
             ));
 
         await _webView.EnsureCoreWebView2Async(env);
@@ -116,9 +115,6 @@ public class MainForm : Form
         settings.IsSwipeNavigationEnabled = false;
         settings.AreDevToolsEnabled = false;
         settings.IsWebMessageEnabled = true;
-
-        // Tell WebView2 to minimize memory usage
-        _webView.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
 
         _webView.CoreWebView2.PermissionRequested += (_, args) =>
         {
